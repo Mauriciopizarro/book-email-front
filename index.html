@@ -75,11 +75,14 @@
     </div>
 
     <script>
-        document.getElementById('emailForm').addEventListener('submit', function(event) {
+        const emailInput = document.getElementById('email');
+        const messageElement = document.getElementById('message');
+        const form = document.getElementById('emailForm');
+
+        form.addEventListener('submit', function(event) {
             event.preventDefault();
 
-            const email = document.getElementById('email').value;
-            const messageElement = document.getElementById('message');
+            const email = emailInput.value;
 
             fetch('https://book-email-send.onrender.com/send/single_email', {
                 method: 'POST',
@@ -90,8 +93,10 @@
             })
             .then(response => {
                 if (response.status === 200) {
-                    messageElement.innerText = 'Email enviado con exito';
+                    messageElement.innerText = 'Email enviado con éxito.';
                     messageElement.style.color = 'green';
+                    // Limpiar el campo de email
+                    emailInput.value = '';
                 } else {
                     messageElement.innerText = 'Error al enviar el email.';
                     messageElement.style.color = 'red';
@@ -103,7 +108,11 @@
                 messageElement.style.color = 'red';
             });
         });
+
+        // Ocultar el mensaje cuando el usuario comienza a escribir de nuevo
+        emailInput.addEventListener('input', function() {
+            messageElement.innerText = ''; // Limpiar el mensaje
+        });
     </script>
 </body>
 </html>
-
