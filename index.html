@@ -23,16 +23,27 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             max-width: 400px;
             width: 100%;
-            text-align: center;
         }
 
         h1 {
             color: #333333;
             margin-bottom: 20px;
             font-size: 24px;
+            text-align: center;
         }
 
-        input[type="email"] {
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #131413;
+            text-align: center;
+        }
+
+        input[type="email"], input[type="text"] {
             width: 100%;
             padding: 12px;
             margin-bottom: 20px;
@@ -61,28 +72,52 @@
             margin-top: 20px;
             font-size: 14px;
             color: #333333;
+            text-align: center;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Enviar Email</h1>
-        <form id="emailForm">
-            <input type="email" id="email" name="email" placeholder="Ingresa tu correo electrónico" required>
-            <input type="submit" value="Enviar">
-        </form>
+        
+        <!-- Sección para enviar un solo email -->
+        <div class="section">
+            <div class="section-title">ENVIAR UN SOLO EMAIL</div>
+            <form id="singleEmailForm">
+                <input type="email" id="email" name="email" placeholder="Ingresa un correo electrónico">
+                <input type="submit" value="Enviar">
+            </form>
+        </div>
+
+        <!-- Sección para enviar varios emails -->
+        <div class="section">
+            <div class="section-title">ENVIAR MULTIPLES EMAILS</div>
+            <form id="bulkEmailForm">
+                <input type="text" id="bulkEmails" name="bulkEmails" placeholder="Ingresa correos separados por coma">
+                <input type="submit" value="Enviar">
+            </form>
+        </div>
+
+        <!-- Mensaje de estado -->
         <div class="message" id="message"></div>
     </div>
 
     <script>
         const emailInput = document.getElementById('email');
+        const bulkEmailsInput = document.getElementById('bulkEmails');
         const messageElement = document.getElementById('message');
-        const form = document.getElementById('emailForm');
-
-        form.addEventListener('submit', function(event) {
+        
+        // Formulario para enviar un solo email
+        const singleEmailForm = document.getElementById('singleEmailForm');
+        singleEmailForm.addEventListener('submit', function(event) {
             event.preventDefault();
 
-            const email = emailInput.value;
+            const email = emailInput.value.trim();
+
+            if (!email) {
+                messageElement.innerText = 'Por favor ingresa un correo.';
+                messageElement.style.color = 'red';
+                return;
+            }
 
             fetch('https://book-email-send.onrender.com/send/single_email', {
                 method: 'POST',
@@ -95,8 +130,7 @@
                 if (response.status === 200) {
                     messageElement.innerText = 'Email enviado con éxito.';
                     messageElement.style.color = 'green';
-                    // Limpiar el campo de email
-                    emailInput.value = '';
+                    emailInput.value = '';  // Limpiar el campo de email
                 } else {
                     messageElement.innerText = 'Error al enviar el email.';
                     messageElement.style.color = 'red';
@@ -109,9 +143,52 @@
             });
         });
 
-        // Ocultar el mensaje cuando el usuario comienza a escribir de nuevo
+        // Formulario para enviar múltiples emails
+        const bulkEmailForm = document.getElementById('bulkEmailForm');
+        bulkEmailForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const bulkEmails = bulkEmailsInput.value.trim();
+
+            if (!bulkEmails) {
+                messageElement.innerText = 'Por favor ingresa una lista de correos separados por coma.';
+                messageElement.style.color = 'red';
+                return;
+            }
+
+            const emailList = bulkEmails.split(',').map(email => ({ email: email.trim() }));
+
+            fetch('https://book-email-send.onrender.com/send/bulk_email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email_list: emailList })
+            })
+            .then(response => {
+                if (response.status === 200) {
+                    messageElement.innerText = 'Emails enviados con éxito.';
+                    messageElement.style.color = 'green';
+                    bulkEmailsInput.value = '';  // Limpiar el campo de correos
+                } else {
+                    messageElement.innerText = 'Error al enviar los emails.';
+                    messageElement.style.color = 'red';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                messageElement.innerText = 'Error al enviar los emails.';
+                messageElement.style.color = 'red';
+            });
+        });
+
+        // Limpiar el mensaje cuando el usuario comience a escribir de nuevo
         emailInput.addEventListener('input', function() {
-            messageElement.innerText = ''; // Limpiar el mensaje
+            messageElement.innerText = '';
+        });
+
+        bulkEmailsInput.addEventListener('input', function() {
+            messageElement.innerText = '';
         });
     </script>
 </body>
