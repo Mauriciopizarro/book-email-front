@@ -7,12 +7,12 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f0f2f5;
+            background-color: #ded7ce;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             height: 100vh;
         }
 
@@ -20,9 +20,11 @@
             background-color: #ffffff;
             padding: 30px;
             border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0);
             max-width: 400px;
             width: 100%;
+            margin-right: 20px;
+            margin-top: 2%;
         }
 
         h1 {
@@ -33,7 +35,7 @@
         }
 
         .section {
-            margin-bottom: 30px;
+            margin-bottom: 25%; /* Añadido espacio entre secciones */
         }
 
         .section-title {
@@ -74,11 +76,64 @@
             color: #333333;
             text-align: center;
         }
+
+        /* Estilos para el contenedor de emails enviados */
+        .sent-emails {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 300px;
+            width: 100%;
+            height: 500px;
+            overflow-y: auto;
+            margin-top: 2%;
+        }
+
+        .sent-emails-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #131413;
+            text-align: center;
+        }
+
+        .email-item {
+            font-size: 14px;
+            color: #333333;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .email-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4CAF50;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+            display: none; /* Oculto por defecto */
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
     </style>
 </head>
 <body>
     <div class="container">
-        
         <!-- Sección para enviar un solo email -->
         <div class="section">
             <div class="section-title">ENVIAR UN SOLO EMAIL</div>
@@ -101,11 +156,58 @@
         <div class="message" id="message"></div>
     </div>
 
+    <!-- Contenedor para mostrar los emails enviados -->
+    <div class="sent-emails">
+        <div class="sent-emails-title">Emails Enviados</div>
+        <div id="emailList"></div>
+        <div class="spinner" id="spinner"></div> <!-- Spinner añadido aquí -->
+    </div>
+
     <script>
         const emailInput = document.getElementById('email');
         const bulkEmailsInput = document.getElementById('bulkEmails');
         const messageElement = document.getElementById('message');
+        const emailListElement = document.getElementById('emailList');
+        const spinner = document.getElementById('spinner');
         
+        // Función para mostrar/ocultar el spinner
+        function toggleSpinner(show) {
+            if (show) {
+                spinner.style.display = 'block'; // Mostrar spinner
+            } else {
+                spinner.style.display = 'none'; // Ocultar spinner
+            }
+        }
+
+        // Función para obtener los emails enviados
+        function fetchSentEmails() {
+            toggleSpinner(true); // Mostrar el spinner antes de hacer el fetch
+            fetch('https://book-email-send.onrender.com/email/all_sent')
+                .then(response => response.json())
+                .then(data => {
+                    // Limpiar la lista de emails
+                    emailListElement.innerHTML = '';
+
+                    // Mostrar los emails enviados
+                    data.forEach(emailData => {
+                        const emailItem = document.createElement('div');
+                        emailItem.classList.add('email-item');
+                        emailItem.innerText = `${emailData.email}`;
+                        emailListElement.appendChild(emailItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error al obtener los emails enviados:', error);
+                    emailListElement.innerHTML = '<p>Error al cargar los emails.</p>';
+                })
+                .finally(() => {
+                    toggleSpinner(false); // Ocultar el spinner cuando termina el fetch
+                });
+        }
+
+        // Llamar a la función cuando se carga la página
+        document.addEventListener('DOMContentLoaded', fetchSentEmails);
+
         // Formulario para enviar un solo email
         const singleEmailForm = document.getElementById('singleEmailForm');
         singleEmailForm.addEventListener('submit', function(event) {
@@ -131,6 +233,7 @@
                     messageElement.innerText = 'Email enviado con éxito.';
                     messageElement.style.color = 'green';
                     emailInput.value = '';  // Limpiar el campo de email
+                    fetchSentEmails(); // Actualizar la lista de emails enviados
                 } else {
                     messageElement.innerText = 'Error al enviar el email.';
                     messageElement.style.color = 'red';
@@ -170,6 +273,7 @@
                     messageElement.innerText = 'Emails enviados con éxito.';
                     messageElement.style.color = 'green';
                     bulkEmailsInput.value = '';  // Limpiar el campo de correos
+                    fetchSentEmails(); // Actualizar la lista de emails enviados
                 } else {
                     messageElement.innerText = 'Error al enviar los emails.';
                     messageElement.style.color = 'red';
@@ -180,15 +284,6 @@
                 messageElement.innerText = 'Error al enviar los emails.';
                 messageElement.style.color = 'red';
             });
-        });
-
-        // Limpiar el mensaje cuando el usuario comience a escribir de nuevo
-        emailInput.addEventListener('input', function() {
-            messageElement.innerText = '';
-        });
-
-        bulkEmailsInput.addEventListener('input', function() {
-            messageElement.innerText = '';
         });
     </script>
 </body>
