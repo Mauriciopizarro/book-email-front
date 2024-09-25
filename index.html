@@ -34,6 +34,11 @@
             margin: 10px;
         }
 
+        .sent-emails {
+            max-height: 300px; /* Altura máxima del contenedor */
+            overflow-y: auto;  /* Permitir desplazamiento vertical */
+        }
+
         h1 {
             color: #333333;
             margin-bottom: 20px;
@@ -216,7 +221,7 @@
                     data.forEach(emailData => {
                         const emailItem = document.createElement('div');
                         emailItem.classList.add('email-item');
-                        emailItem.innerText = `Email: ${emailData.email}`;
+                        emailItem.innerText = `${emailData.email}`;
                         emailListElement.appendChild(emailItem);
                     });
                 })
@@ -273,19 +278,19 @@
 
             const bulkEmails = bulkEmailsInput.value.trim();
             if (!bulkEmails) {
-                messageElement.innerText = 'Por favor ingresa una lista de correos separados por coma.';
+                messageElement.innerText = 'Por favor ingresa los correos.';
                 messageElement.style.color = 'red';
                 return;
             }
 
-            const emailList = bulkEmails.split(',').map(email => email.trim());
+            const emailList = bulkEmails.split(',').map(email => ({ email: email.trim() }));
             
             fetch('https://book-email-send.onrender.com/send/bulk_email', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ emails: emailList })
+                body: JSON.stringify({ email_list: emailList })
             })
             .then(response => {
                 if (response.status === 200) {
