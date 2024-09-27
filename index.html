@@ -119,6 +119,29 @@
             display: none;
         }
 
+        #emailModal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgb(230, 224, 224);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1), 0 6px 20px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 5px 10px;
+        }
+
         @keyframes spin {
             0% {
                 transform: rotate(0deg);
@@ -195,12 +218,24 @@
         </div>
     </div>
 
+    <div id="emailModal" style="display:none;">
+        <div class="modal-content">
+            <p>El email ya fue enviado. ¿Quieres volver a enviarlo?</p>
+            <button id="yesButton">Sí</button>
+            <button id="noButton">No</button>
+        </div>
+    </div>
+
     <script>
         const emailInput = document.getElementById('email');
         const bulkEmailsInput = document.getElementById('bulkEmails');
         const messageElement = document.getElementById('message');
         const emailListElement = document.getElementById('emailList');
         const spinner = document.getElementById('spinner');
+        const singleEmailForm = document.getElementById('singleEmailForm');
+        const emailModal = document.getElementById('emailModal');
+        const yesButton = document.getElementById('yesButton');
+        const noButton = document.getElementById('noButton');
         
         // Función para mostrar/ocultar el spinner
         function toggleSpinner(show) {
@@ -236,7 +271,7 @@
 
         document.addEventListener('DOMContentLoaded', fetchSentEmails);
 
-        const singleEmailForm = document.getElementById('singleEmailForm');
+        
         singleEmailForm.addEventListener('submit', function(event) {
             event.preventDefault();
 
@@ -247,29 +282,62 @@
                 return;
             }
 
-            fetch('https://book-email-send.onrender.com/send/single_email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ email: email })
-            })
-            .then(response => {
-                if (response.status === 200) {
-                    messageElement.innerText = 'Email enviado con éxito.';
-                    messageElement.style.color = 'green';
-                    emailInput.value = '';
-                    fetchSentEmails();
-                } else {
+            // Funcion para hacer la solicitud POST
+            function sendEmail(forceSend = false) {
+                fetch('https://book-email-send.onrender.com/send/single_email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email, force_send: forceSend })
+                })
+                .then(response => response.json().then(data => ({status: response.status, body: data})))
+                .then(({status, body}) => {
+                    if (status === 200) {
+                        messageElement.innerText = 'Email enviado con éxito.';
+                        messageElement.style.color = 'green';
+                        emailInput.value = '';
+                        fetchSentEmails();  // Si tienes esta función definida en otra parte
+                    } else if (status === 400 && body.detail === "Email already sent") {
+                        // Mostrar el modal si el email ya fue enviado
+                        emailModal.style.display = 'block';
+
+                        // Primero, quitar cualquier listener previo para evitar que se registren múltiples eventos
+                        yesButton.replaceWith(yesButton.cloneNode(true));  // Clona el botón "Sí" para quitar el listener previo
+                        noButton.replaceWith(noButton.cloneNode(true));  // Clona el botón "No" para quitar el listener previo
+
+                        // Volver a obtener referencias de los botones clonados
+                        const newYesButton = document.getElementById('yesButton');
+                        const newNoButton = document.getElementById('noButton');
+
+                        // Manejar el botón "Sí" con un solo evento
+                        newYesButton.addEventListener('click', function() {
+                            // Ocultar el modal y volver a intentar con force_send = true
+                            emailModal.style.display = 'none';
+                            sendEmail(true);  // Hacer la petición con force_send = true
+                        }, { once: true });  // Para asegurarse de que se ejecute solo una vez
+
+                        // Manejar el botón "No"
+                        newNoButton.addEventListener('click', function() {
+                            // Ocultar el modal sin reenviar el email
+                            emailModal.style.display = 'none';
+                            messageElement.innerText = 'El email no se volvió a enviar.';
+                            messageElement.style.color = 'orange';
+                        }, { once: true });  // Para asegurarse de que se ejecute solo una vez
+                    } else {
+                        messageElement.innerText = 'Error al enviar el email.';
+                        messageElement.style.color = 'red';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     messageElement.innerText = 'Error al enviar el email.';
                     messageElement.style.color = 'red';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                messageElement.innerText = 'Error al enviar el email.';
-                messageElement.style.color = 'red';
-            });
+                });
+            }
+
+            // Llamar la función para enviar el correo
+            sendEmail();
         });
 
         const bulkEmailForm = document.getElementById('bulkEmailForm');
